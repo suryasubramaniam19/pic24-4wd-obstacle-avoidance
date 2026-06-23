@@ -1,6 +1,14 @@
 # PIC24-Powered 4WD Obstacle Avoidance Vehicle
 
-A dual-mode, embedded system built on the Microchip PIC24 microcontroller architecture. The system features a custom-built physical remote controller that transmits manual driving commands via Bluetooth, paired with a deterministic, real-time ultrasonic sensor priority safety override circuit to mitigate crashes.
+A dual-mode, embedded system built on the Microchip PIC24 microcontroller architecture. This was a collaborative academic project featuring a custom physical remote controller, an interrupt-driven UART buffer, and a deterministic ultrasonic safety override circuit.
+
+## 👨‍💻 Team & Contributions
+This firmware was developed as a group project. My specific contributions included:
+* **Ultrasonic Subsystem Architecture (`ultrasonic.c` & `ultrasonic.h`):** Solely responsible for writing the low-level timer and input capture peripheral drivers for the HC-SR04 sensor.
+* **System Integration:** Led the merging of the UART Bluetooth drivers, PWM motor logic, and ultrasonic sensor states, resolving interrupt prioritization and timing conflicts.
+* Team members handled the base UART circular buffer implementation and the initial Motor PWM (Timer 3 / Output Compare) configurations.
+
+---
 
 ## 🚀 System Architecture & Modes
 
@@ -25,24 +33,19 @@ A dual-mode, embedded system built on the Microchip PIC24 microcontroller archit
 
 ## 💻 Firmware Architecture & API Reference
 
-The project is split into granular hardware-abstraction drivers to align with safety-critical firmware engineering practices.
-
-### 1. Ultrasonic Subsystem (`ultrasonic.c`)
+### 1. Ultrasonic Subsystem (`ultrasonic.c`) - *My Primary Focus*
 Handles microsecond-level timing via native peripheral hardware without blocking the CPU.
 * `void triggerInput()`: Transmits the initial 10µs trigger pulse sequence to the HC-SR04.
 * `void initEchoCapture()`: Configures **Timer 2** and **Input Capture 1 (IC1)** to timestamp rising and falling edges of the incoming echo pulse.
 * `int Obstacle_Detection(void)`: Evaluates sensor data and returns a safety flag boolean (`1` for hazard, `0` for clear).
-* `void Ultrasonic_Reset(void)`: Resets state variables and buffer configurations back to baseline.
 
 ### 2. Motor Actuation (`motor.c`)
 Manages physical movement vectors and variable speed configuration.
 * `void motor_init(void)`: Initializes Timer 3 and registers Pulse Width Modulation (PWM) channels to target pins via **Peripheral Pin Select (PPS)**.
 * `void set_car_speed(int left_speed, int right_speed)`: Assigns explicit duty cycles to **Output Compare channels (OC1/OC2)**.
-* `void car_forward(int speed)` / `car_backward(int speed)`: Sets precise logic gates on I/O lines `RB0`-`RB3` to drive H-Bridge directions.
 
 ### 3. UART & Bluetooth Communications (`bluetooth.c`)
 Ensures robust telemetry and parsing using an asynchronous, interrupt-driven model.
-* `void bluetooth_setup(void)`: Initializes the hardware UART module at the designated baud rate.
 * `int uart1_available(void)`: Polls the receive line to verify safe, uncorrupted data in the queue.
 * `unsigned char uart1_getc(void)`: Pops an incoming character command string from a software-implemented **Circular Buffer** to prevent data drops during CPU-intensive loops.
 
